@@ -19,6 +19,39 @@
 		&twl6030_pins
 		&twl6030_wkup_pins
 	>;
+
+	omap_twl6030_vcore1: vcore1 {
+		compatible = "ti,omap-twl6030-vcore1";
+		ti,boot-voltage-micro-volts = <1200000>;
+		ti,vp = <&vp_mpu>;
+	};
+
+	omap_twl6030_vcore2: vcore2 {
+		compatible = "ti,omap-twl6030-vcore2";
+		ti,boot-voltage-micro-volts = <1200000>;
+		ti,vp = <&vp_iva>;
+	};
+
+	omap_twl6030_vcore3: vcore3 {
+		compatible = "ti,omap-twl6030-vcore3";
+		ti,boot-voltage-micro-volts = <1200000>;
+		ti,vp = <&vp_core>;
+	};
+
+	vdd1: regulator-vdd1 {
+		compatible = "ti,twl6030-vdd1";
+		ti,twl603x_enable_offset;
+	};
+
+	vdd2: regulator-vdd2 {
+		compatible = "ti,twl6030-vdd2";
+		ti,twl603x_enable_offset;
+	};
+
+	vdd3: regulator-vdd3 {
+		compatible = "ti,twl6030-vdd3";
+		ti,twl603x_enable_offset;
+	};
 };
 
 &omap4_pmx_wkup {
@@ -35,4 +68,9 @@
 			OMAP4_IOPAD(0x19e, WAKEUP_EN | PIN_INPUT_PULLUP | MUX_MODE0)	/* sys_nirq1.sys_nirq1 */
 		>;
 	};
+};
+
+&vc {
+	ti,i2c-high-speed;
+	ti,i2c-pad-load = <3>;
 };
