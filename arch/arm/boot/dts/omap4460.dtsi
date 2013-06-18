@@ -90,4 +90,20 @@
 
 };
 
+&vc_mpu {
+	ti,retention-micro-volts = <750000>;
+	/* Erratum i738: Reliability impact work around */
+	ti,off-micro-volts = <750000>;
+};
+
+&vc_iva {
+	ti,retention-micro-volts = <750000>;
+	ti,off-micro-volts = <0>;
+};
+
+&vc_core {
+	ti,retention-micro-volts = <750000>;
+	ti,off-micro-volts = <0>;
+};
+
 /include/ "omap446x-clocks.dtsi"
