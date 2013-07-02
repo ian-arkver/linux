@@ -122,6 +122,16 @@
 	ti,off-micro-volts = <600000>;
 };
 
+&vp_mpu {
+	ti,min-micro-volts = <900000>;
+	ti,max-micro-volts = <1380000>;
+};
+
+&vp_core {
+	ti,min-micro-volts = <900000>;
+	ti,max-micro-volts = <1200000>;
+};
+
 /include/ "omap34xx-omap36xx-clocks.dtsi"
 /include/ "omap36xx-omap3430es2plus-clocks.dtsi"
 /include/ "omap36xx-am35xx-omap3430es2plus-clocks.dtsi"
