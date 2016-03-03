@@ -3941,7 +3941,7 @@ static struct v4l2_subdev_pad_ops ov5642_subdev_pad_ops = {
 	.enum_frame_size = ov5642_enum_frame_size,
 	.get_fmt = ov5642_get_format,
 	.set_fmt = ov5642_set_format,
-	.get_crop = ov5642_get_selection,
+	.get_selection = ov5642_get_selection,
 };
 
 static struct v4l2_subdev_ops ov5642_subdev_ops = {
