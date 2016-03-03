@@ -278,9 +278,9 @@ static int ipu_invalid_link(struct ipu_soc *ipu, const struct media_pad *local,
 			    const struct media_pad *remote)
 {
 	dev_err(ipu->dev, "invalid link '%s'(%d):%d %s '%s'(%d):%d\n",
-		local->entity->name, local->entity->id, local->index,
+		local->entity->name, media_entity_id(local->entity), local->index,
 		(local->flags & MEDIA_PAD_FL_SOURCE) ? "->" : "<-",
-		remote->entity->name, remote->entity->id, remote->index);
+		remote->entity->name, media_entity_id(remote->entity), remote->index);
 
 	return -EINVAL;
 }
