@@ -4012,7 +4012,7 @@ static int ov5642_probe(struct i2c_client *client,
 
 	sensor->i2c_client = client;
 	sensor->dev = dev;
-	sensor->fmt.code = V4L2_MBUS_FMT_YUYV8_2X8;
+	sensor->fmt.code = MEDIA_BUS_FMT_YUYV8_2X8;
 	sensor->fmt.width = 640;
 	sensor->fmt.height = 480;
 	sensor->fmt.field = V4L2_FIELD_NONE;
@@ -4116,7 +4116,7 @@ static int ov5642_probe(struct i2c_client *client,
 	sensor->sd.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
 
 	sensor->pad.flags = MEDIA_PAD_FL_SOURCE;
-	ret = media_entity_init(&sensor->sd.entity, 1, &sensor->pad, 0);
+	ret = media_entity_pads_init(&sensor->sd.entity, 1, &sensor->pad);
 	if (ret < 0)
 		goto err;
 
