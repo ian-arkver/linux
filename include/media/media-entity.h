@@ -27,6 +27,7 @@
 #include <linux/kernel.h>
 #include <linux/list.h>
 #include <linux/media.h>
+#include <linux/bug.h>
 
 /* Enums used internally at the media controller to represent graphs */
 
