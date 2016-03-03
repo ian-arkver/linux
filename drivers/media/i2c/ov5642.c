@@ -3801,7 +3801,7 @@ static int ov5642_s_stream(struct v4l2_subdev *sd, int enable)
 }
 
 static int ov5642_enum_mbus_code(struct v4l2_subdev *sd,
-				 struct v4l2_subdev_fh *fh,
+				 struct v4l2_subdev_pad_config *cfg,
 				 struct v4l2_subdev_mbus_code_enum *code)
 {
 	struct ov5642_dev *sensor = to_ov5642_dev(sd);
@@ -3814,7 +3814,7 @@ static int ov5642_enum_mbus_code(struct v4l2_subdev *sd,
 }
 
 static int ov5642_enum_frame_size(struct v4l2_subdev *subdev,
-				  struct v4l2_subdev_fh *fh,
+				  struct v4l2_subdev_pad_config *cfg,
 				  struct v4l2_subdev_frame_size_enum *fse)
 {
 	if (fse->index >= ov5642_num_modes)
@@ -3829,12 +3829,14 @@ static int ov5642_enum_frame_size(struct v4l2_subdev *subdev,
 }
 
 static struct v4l2_mbus_framefmt *
-__ov5642_get_pad_format(struct ov5642_dev *sensor, struct v4l2_subdev_fh *fh,
+__ov5642_get_pad_format(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config *cfg,
 			unsigned int pad, enum v4l2_subdev_format_whence which)
 {
+	struct ov5642_dev *sensor = to_ov5642_dev(sd);
+
 	switch (which) {
 	case V4L2_SUBDEV_FORMAT_TRY:
-		return v4l2_subdev_get_try_format(fh, pad);
+		return v4l2_subdev_get_try_format(sd, cfg, pad);
 	case V4L2_SUBDEV_FORMAT_ACTIVE:
 		return &sensor->fmt;
 	default:
@@ -3843,12 +3845,14 @@ __ov5642_get_pad_format(struct ov5642_dev *sensor, struct v4l2_subdev_fh *fh,
 }
 
 static struct v4l2_rect *
-__ov5642_get_pad_crop(struct ov5642_dev *sensor, struct v4l2_subdev_fh *fh,
+__ov5642_get_pad_crop(struct v4l2_subdev *sd, struct v4l2_subdev_pad_config *cfg,
 		      unsigned int pad, enum v4l2_subdev_format_whence which)
 {
+	struct ov5642_dev *sensor = to_ov5642_dev(sd);
+
 	switch (which) {
 	case V4L2_SUBDEV_FORMAT_TRY:
-		return v4l2_subdev_get_try_crop(fh, pad);
+		return v4l2_subdev_get_try_crop(sd, cfg, pad);
 	case V4L2_SUBDEV_FORMAT_ACTIVE:
 		return &sensor->crop;
 	default:
@@ -3857,18 +3861,16 @@ __ov5642_get_pad_crop(struct ov5642_dev *sensor, struct v4l2_subdev_fh *fh,
 }
 
 static int ov5642_get_format(struct v4l2_subdev *sd,
-			     struct v4l2_subdev_fh *fh,
+			     struct v4l2_subdev_pad_config *cfg,
 			     struct v4l2_subdev_format *format)
 {
-	struct ov5642_dev *sensor = to_ov5642_dev(sd);
-
-	format->format = *__ov5642_get_pad_format(sensor, fh, format->pad,
+	format->format = *__ov5642_get_pad_format(sd, cfg, format->pad,
 						  format->which);
 	return 0;
 }
 
 static int ov5642_set_format(struct v4l2_subdev *sd,
-			     struct v4l2_subdev_fh *fh,
+			     struct v4l2_subdev_pad_config *cfg,
 			     struct v4l2_subdev_format *format)
 {
 	struct ov5642_dev *sensor = to_ov5642_dev(sd);
@@ -3877,7 +3879,7 @@ static int ov5642_set_format(struct v4l2_subdev *sd,
 	enum ov5642_mode new_mode;
 	int ret;
 
-	__crop = __ov5642_get_pad_crop(sensor, fh, format->pad, format->which);
+	__crop = __ov5642_get_pad_crop(sd, cfg, format->pad, format->which);
 
 	new_mode = ov5642_find_nearest_mode(sensor, format->format.width,
 					    format->format.height);
@@ -3897,7 +3899,7 @@ static int ov5642_set_format(struct v4l2_subdev *sd,
 	if (ret < 0)
 		return ret;
 
-	__format = __ov5642_get_pad_format(sensor, fh, format->pad,
+	__format = __ov5642_get_pad_format(sd, cfg, format->pad,
 					   format->which);
 	__format->width = __crop->width;
 	__format->height = __crop->height;
@@ -3906,12 +3908,10 @@ static int ov5642_set_format(struct v4l2_subdev *sd,
 }
 
 static int ov5642_get_crop(struct v4l2_subdev *sd,
-			   struct v4l2_subdev_fh *fh,
+			   struct v4l2_subdev_pad_config *cfg,
 			   struct v4l2_subdev_crop *crop)
 {
-	struct ov5642_dev *sensor = to_ov5642_dev(sd);
-
-	crop->rect = *__ov5642_get_pad_crop(sensor, fh, crop->pad,
+	crop->rect = *__ov5642_get_pad_crop(sd, cfg, crop->pad,
 					    crop->which);
 	return 0;
 }
