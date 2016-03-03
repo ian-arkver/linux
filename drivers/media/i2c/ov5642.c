@@ -3907,12 +3907,15 @@ static int ov5642_set_format(struct v4l2_subdev *sd,
 	return 0;
 }
 
-static int ov5642_get_crop(struct v4l2_subdev *sd,
+static int ov5642_get_selection(struct v4l2_subdev *sd,
 			   struct v4l2_subdev_pad_config *cfg,
-			   struct v4l2_subdev_crop *crop)
+			   struct v4l2_subdev_selection *sel)
 {
-	crop->rect = *__ov5642_get_pad_crop(sd, cfg, crop->pad,
-					    crop->which);
+	if (sel->target != V4L2_SEL_TGT_CROP)
+		return -EINVAL;
+
+	sel->r = *__ov5642_get_pad_crop(sd, cfg, sel->pad,
+					    sel->which);
 	return 0;
 }
 
@@ -3938,7 +3941,7 @@ static struct v4l2_subdev_pad_ops ov5642_subdev_pad_ops = {
 	.enum_frame_size = ov5642_enum_frame_size,
 	.get_fmt = ov5642_get_format,
 	.set_fmt = ov5642_set_format,
-	.get_crop = ov5642_get_crop,
+	.get_crop = ov5642_get_selection,
 };
 
 static struct v4l2_subdev_ops ov5642_subdev_ops = {
