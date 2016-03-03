@@ -809,7 +809,7 @@ int ipu_media_init(struct ipu_soc *ipu)
 		for (p = 0; p < num_pads; p++)
 			pad[p].flags = ipu_entities[i].pads[p].flags;
 
-		ret = media_entity_pads_init(&sd->entity, num_pads, pad, 0);
+		ret = media_entity_pads_init(&sd->entity, num_pads, pad);
 		if (ret) {
 			dev_err(ipu->dev,
 				"failed to initialize entity '%s': %d\n",
@@ -832,6 +832,6 @@ void ipu_media_exit(struct ipu_soc *ipu)
 	/* Skip the first two entities, IPU_CSI0 and IPU_CSI1 */
 	for (i = IPU_CSI1 + 1; i < IPU_NUM_ENTITIES; i++) {
 		v4l2_device_unregister_subdev(ipu->subdevs[i]);
-		media_entity_cleanup(ipu->subdevs[i]->entity);
+		media_entity_cleanup(&ipu->subdevs[i]->entity);
 	}
 }
