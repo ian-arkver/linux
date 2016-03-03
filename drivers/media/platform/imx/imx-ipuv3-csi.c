@@ -1174,7 +1174,7 @@ static void ipucsi_create_links(struct ipucsi *ipucsi)
 			continue;
 		}
 
-		ret = media_entity_create_link(pad->entity, pad->index,
+		ret = media_create_pad_link(pad->entity, pad->index,
 					       &ipucsi->vdev.entity, 0, 0);
 		if (ret < 0) {
 			v4l2_err(ipucsi->v4l2_dev,
@@ -1439,7 +1439,7 @@ static int ipucsi_async_init(struct ipucsi *ipucsi, struct device_node *node)
 	if (!rp)
 		return 0;
 
-	ipucsi->link = ipu_media_entity_create_link(&ipucsi->subdev, 0, rp,
+	ipucsi->link = ipu_media_create_pad_link(&ipucsi->subdev, 0, rp,
 			MEDIA_LNK_FL_IMMUTABLE | MEDIA_LNK_FL_ENABLED);
 
 	if (IS_ERR(ipucsi->link)) {

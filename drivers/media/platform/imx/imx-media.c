@@ -58,7 +58,7 @@ static int ipu_media_bound(struct v4l2_async_notifier *notifier,
 	rp = of_graph_get_remote_port(np);
 	of_property_read_u32(rp, "reg", &portno);
 
-	ret = media_entity_create_link(&sd->entity, portno, &link->sd->entity,
+	ret = media_create_pad_link(&sd->entity, portno, &link->sd->entity,
 			link->padno, link->media_link_flags);
 	if (ret)
 		return ret;
@@ -76,7 +76,7 @@ static void ipu_media_unbind(struct v4l2_async_notifier *notifier,
 	}
 }
 
-struct ipu_media_link *ipu_media_entity_create_link(struct v4l2_subdev *sd,
+struct ipu_media_link *ipu_media_create_pad_link(struct v4l2_subdev *sd,
 		int padno, struct device_node *endpoint,
 		u32 media_link_flags)
 {
@@ -122,7 +122,7 @@ struct ipu_media_link *ipu_media_entity_create_link(struct v4l2_subdev *sd,
 
 	return link;
 }
-EXPORT_SYMBOL_GPL(ipu_media_entity_create_link);
+EXPORT_SYMBOL_GPL(ipu_media_create_pad_link);
 
 void ipu_media_entity_remove_link(struct ipu_media_link *link)
 {

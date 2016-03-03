@@ -5,7 +5,7 @@ struct v4l2_device;
 struct media_device;
 struct device;
 
-struct ipu_media_link *ipu_media_entity_create_link(struct v4l2_subdev *sd,
+struct ipu_media_link *ipu_media_create_pad_link(struct v4l2_subdev *sd,
 		int padno, struct device_node *remote_node,
 		u32 media_link_flags);
 

@@ -25,7 +25,7 @@
 #include <media/v4l2-subdev.h>
 #include <media/v4l2-of.h>
 
-#include <media/imx.h> /* for ipu_media_entity_create_link */
+#include <media/imx.h> /* for ipu_media_create_pad_link */
 
 struct vidsw {
 	struct device *dev;
@@ -117,7 +117,7 @@ static int vidsw_async_init(struct vidsw *vidsw, struct device_node *node)
 		vidsw->endpoint[portno] = endpoint;
 
 		/* FIXME */
-		ipu_media_entity_create_link(&vidsw->subdev, portno, ep, 0);
+		ipu_media_create_pad_link(&vidsw->subdev, portno, ep, 0);
 	}
 
 	return 0;

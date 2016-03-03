@@ -703,7 +703,7 @@ int ipu_register_subdev(struct ipu_soc *ipu, enum ipu_entities idx,
 		if (!sd_src || !sd_dst)
 			continue;
 
-		ret = media_entity_create_link(&sd_src->entity, l->src_pad,
+		ret = media_create_pad_link(&sd_src->entity, l->src_pad,
 					       &sd_dst->entity, l->dst_pad, 0);
 		if (ret) {
 			dev_err(ipu->dev,
