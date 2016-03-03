@@ -313,6 +313,7 @@ dtb-$(CONFIG_SOC_IMX6Q) += \
 	imx6dl-sabresd.dtb \
 	imx6dl-tx6dl-comtft.dtb \
 	imx6dl-tx6u-801x.dtb \
+	imx6dl-tx6u-8033-vid.dtb \
 	imx6dl-tx6u-811x.dtb \
 	imx6dl-udoo.dtb \
 	imx6dl-wandboard.dtb \
