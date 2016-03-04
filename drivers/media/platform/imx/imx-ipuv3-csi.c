@@ -125,7 +125,7 @@ static struct ipucsi_format ipucsi_format_testpattern = {
 
 /* buffer for one video frame */
 struct ipucsi_buffer {
-	struct vb2_buffer		vb;
+	struct vb2_v4l2_buffer		vb;
 	struct list_head		queue;
 };
 
@@ -170,7 +170,7 @@ struct ipucsi {
 	struct v4l2_fh			fh;
 };
 
-static struct ipucsi_buffer *to_ipucsi_vb(struct vb2_buffer *vb)
+static struct ipucsi_buffer *to_ipucsi_vb(struct vb2_v4l2_buffer *vb)
 {
 	return container_of(vb, struct ipucsi_buffer, vb);
 }
@@ -252,6 +252,7 @@ static irqreturn_t ipucsi_new_frame_handler(int irq, void *context)
 {
 	struct ipucsi *ipucsi = context;
 	struct ipucsi_buffer *buf;
+	struct vb2_v4l2_buffer *vbuf;
 	struct vb2_buffer *vb;
 	unsigned long flags;
 
@@ -264,8 +265,9 @@ static irqreturn_t ipucsi_new_frame_handler(int irq, void *context)
 	 * to userspace. Or, if there are no further frames queued, hold on to it.
 	 */
 	if (ipucsi->active) {
-		vb = &ipucsi->active->vb;
-		buf = to_ipucsi_vb(vb);
+		vbuf = &ipucsi->active->vb;
+		vb = &vbuf->vb2_buf;
+		buf = to_ipucsi_vb(vbuf);
 
 		if (vb2_is_streaming(vb->vb2_queue) && list_is_singular(&ipucsi->capture)) {
 			pr_debug("%s: reusing 0x%08x\n", __func__,
@@ -284,10 +286,10 @@ static irqreturn_t ipucsi_new_frame_handler(int irq, void *context)
 
 	ipucsi->active = list_first_entry(&ipucsi->capture,
 					   struct ipucsi_buffer, queue);
-	vb = &ipucsi->active->vb;
-	do_gettimeofday(&vb->timestamp);
-	vb->field = ipucsi->format.fmt.pix.field;
-	vb->sequence = ipucsi->sequence++;
+	vbuf = &ipucsi->active->vb;
+	vbuf->vb2_buf.timestamp = ktime_get_ns();
+	vbuf->field = ipucsi->format.fmt.pix.field;
+	vbuf->sequence = ipucsi->sequence++;
 
 	/*
 	 * Point the inactive buffer address to the next queued buffer,
@@ -297,9 +299,9 @@ static irqreturn_t ipucsi_new_frame_handler(int irq, void *context)
 	if (!list_is_singular(&ipucsi->capture)) {
 		buf = list_entry(ipucsi->capture.next->next,
 				 struct ipucsi_buffer, queue);
-		vb = &buf->vb;
+		vbuf = &buf->vb;
 	}
-	ipucsi_set_inactive_buffer(ipucsi, vb);
+	ipucsi_set_inactive_buffer(ipucsi, &vbuf->vb2_buf);
 out:
 	spin_unlock_irqrestore(&ipucsi->lock, flags);
 
@@ -469,11 +471,8 @@ static int ipucsi_videobuf_setup(struct vb2_queue *vq,
 
 static int ipucsi_videobuf_prepare(struct vb2_buffer *vb)
 {
-	struct ipucsi *ipucsi = vb->vb2_queue->drv_priv;
-	struct ipucsi_buffer *buf;
+	struct ipucsi *ipucsi = vb2_get_drv_priv(vb->vb2_queue);
 	struct v4l2_pix_format *pix = &ipucsi->format.fmt.pix;
-
-	buf = to_ipucsi_vb(vb);
 
 	if (vb2_plane_size(vb, 0) < pix->sizeimage)
 		return -ENOBUFS;
@@ -486,8 +485,9 @@ static int ipucsi_videobuf_prepare(struct vb2_buffer *vb)
 static void ipucsi_videobuf_queue(struct vb2_buffer *vb)
 {
 	struct vb2_queue *vq = vb->vb2_queue;
-	struct ipucsi *ipucsi = vq->drv_priv;
-	struct ipucsi_buffer *buf = to_ipucsi_vb(vb);
+	struct ipucsi *ipucsi = vb2_get_drv_priv(vq);
+	struct vb2_v4l2_buffer *vbuf = to_vb2_v4l2_buffer(vb);
+	struct ipucsi_buffer *buf = to_ipucsi_vb(vbuf);
 	unsigned long flags;
 
 	spin_lock_irqsave(&ipucsi->lock, flags);
@@ -496,7 +496,7 @@ static void ipucsi_videobuf_queue(struct vb2_buffer *vb)
 	 * If there is no next buffer queued, point the inactive buffer
 	 * address to the incoming buffer
 	 */
-	if (vb2_is_streaming(vb->vb2_queue) && list_is_singular(&ipucsi->capture))
+	if (vb2_is_streaming(vq) && list_is_singular(&ipucsi->capture))
 		ipucsi_set_inactive_buffer(ipucsi, vb);
 
 	list_add_tail(&buf->queue, &ipucsi->capture);
@@ -506,9 +506,9 @@ static void ipucsi_videobuf_queue(struct vb2_buffer *vb)
 
 static void ipucsi_videobuf_release(struct vb2_buffer *vb)
 {
-	struct vb2_queue *vq = vb->vb2_queue;
-	struct ipucsi *ipucsi = vq->drv_priv;
-	struct ipucsi_buffer *buf = to_ipucsi_vb(vb);
+	struct ipucsi *ipucsi = vb2_get_drv_priv(vb->vb2_queue);
+	struct vb2_v4l2_buffer *vbuf = to_vb2_v4l2_buffer(vb);
+	struct ipucsi_buffer *buf = to_ipucsi_vb(vbuf);
 	unsigned long flags;
 
 	spin_lock_irqsave(&ipucsi->lock, flags);
@@ -526,7 +526,8 @@ static void ipucsi_videobuf_release(struct vb2_buffer *vb)
 
 static int ipucsi_videobuf_init(struct vb2_buffer *vb)
 {
-	struct ipucsi_buffer *buf = to_ipucsi_vb(vb);
+	struct vb2_v4l2_buffer *vbuf = to_vb2_v4l2_buffer(vb);
+	struct ipucsi_buffer *buf = to_ipucsi_vb(vbuf);
 
 	/* This is for locking debugging only */
 	INIT_LIST_HEAD(&buf->queue);
@@ -539,13 +540,12 @@ static int ipucsi_videobuf_init(struct vb2_buffer *vb)
 
 static int ipucsi_videobuf_start_streaming(struct vb2_queue *vq, unsigned int count)
 {
-	struct ipucsi *ipucsi = vq->drv_priv;
+	struct ipucsi *ipucsi = vb2_get_drv_priv(vq);
 	struct ipucsi_format *ipucsifmt = ipucsi_current_format(ipucsi);
 	u32 width = ipucsi->format.fmt.pix.width;
 	u32 height = ipucsi->format.fmt.pix.height;
 	struct device *dev = ipucsi->dev;
 	int burstsize;
-	struct vb2_buffer *vb;
 	struct ipucsi_buffer *buf;
 	int nfack_irq;
 	int ret;
@@ -714,8 +714,7 @@ static int ipucsi_videobuf_start_streaming(struct vb2_queue *vq, unsigned int co
 
 	/* Point the inactive buffer address to the first buffer */
 	buf = list_first_entry(&ipucsi->capture, struct ipucsi_buffer, queue);
-	vb = &buf->vb;
-	ipucsi_set_inactive_buffer(ipucsi, vb);
+	ipucsi_set_inactive_buffer(ipucsi, &buf->vbuf.vb2_buf);
 
 	ipu_idmac_enable_channel(ipucsi->ipuch);
 
@@ -757,7 +756,7 @@ err_dequeue:
 
 static void ipucsi_videobuf_stop_streaming(struct vb2_queue *vq)
 {
-	struct ipucsi *ipucsi = vq->drv_priv;
+	struct ipucsi *ipucsi = vb2_get_drv_priv(vq);
 	unsigned long flags;
 	int nfack_irq = ipu_idmac_channel_irq(ipucsi->ipu, ipucsi->ipuch,
 				IPU_IRQ_NFACK);
@@ -778,7 +777,7 @@ static void ipucsi_videobuf_stop_streaming(struct vb2_queue *vq)
 		struct ipucsi_buffer *buf = list_entry(ipucsi->capture.next,
 						 struct ipucsi_buffer, queue);
 		list_del_init(ipucsi->capture.next);
-		vb2_buffer_done(&buf->vb, VB2_BUF_STATE_ERROR);
+		vb2_buffer_done(&buf->vb.vb2_buf, VB2_BUF_STATE_ERROR);
 	}
 	spin_unlock_irqrestore(&ipucsi->lock, flags);
 
@@ -792,13 +791,13 @@ static void ipucsi_videobuf_stop_streaming(struct vb2_queue *vq)
 
 static void ipucsi_lock(struct vb2_queue *vq)
 {
-	struct ipucsi *ipucsi = vq->drv_priv;
+	struct ipucsi *ipucsi = vb2_get_drv_priv(vq);
 	mutex_lock(&ipucsi->mutex);
 }
 
 static void ipucsi_unlock(struct vb2_queue *vq)
 {
-	struct ipucsi *ipucsi = vq->drv_priv;
+	struct ipucsi *ipucsi = vb2_get_drv_priv(vq);
 	mutex_unlock(&ipucsi->mutex);
 }
 
