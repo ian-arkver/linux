@@ -22,5 +22,6 @@ config VIDEO_IMX_IPU_CSI
 	select VIDEOBUF2_DMA_CONTIG
 	select VIDEO_IMX_IPU_COMMON
 	select VIDEO_IMX_IPUV3
+	select IMX_IPUV3_CORE
 	---help---
 	  This is a v4l2 video capture driver for the IPUv3 on i.MX5/6.
