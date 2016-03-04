@@ -714,7 +714,7 @@ static int ipucsi_videobuf_start_streaming(struct vb2_queue *vq, unsigned int co
 
 	/* Point the inactive buffer address to the first buffer */
 	buf = list_first_entry(&ipucsi->capture, struct ipucsi_buffer, queue);
-	ipucsi_set_inactive_buffer(ipucsi, &buf->vbuf.vb2_buf);
+	ipucsi_set_inactive_buffer(ipucsi, &buf->vb.vb2_buf);
 
 	ipu_idmac_enable_channel(ipucsi->ipuch);
 
@@ -1395,7 +1395,7 @@ static int ipucsi_video_device_init(struct platform_device *pdev,
 	video_set_drvdata(vdev, ipucsi);
 
 	ipucsi->media_pad.flags = MEDIA_PAD_FL_SINK;
-	ret = media_entity_init(&vdev->entity, 1, &ipucsi->media_pad, 0);
+	ret = media_entity_pads_init(&vdev->entity, 1, &ipucsi->media_pad);
 	if (ret < 0)
 		video_device_release(vdev);
 
