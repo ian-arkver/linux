@@ -545,7 +545,7 @@ static int ipucsi_videobuf_start_streaming(struct vb2_queue *vq, unsigned int co
 	u32 width = ipucsi->format.fmt.pix.width;
 	u32 height = ipucsi->format.fmt.pix.height;
 	struct device *dev = ipucsi->dev;
-	int burstsize;
+	int burstsize = 16;
 	struct ipucsi_buffer *buf;
 	int nfack_irq;
 	int ret;
