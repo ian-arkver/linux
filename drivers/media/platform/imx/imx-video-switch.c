@@ -101,7 +101,7 @@ static int vidsw_async_init(struct vidsw *vidsw, struct device_node *node)
 		vidsw->pads[i].flags = MEDIA_PAD_FL_SINK;
 	vidsw->pads[numports - 1].flags = MEDIA_PAD_FL_SOURCE;
 
-	ret = media_entity_init(&vidsw->subdev.entity, numports, vidsw->pads, 0);
+	ret = media_entity_pads_init(&vidsw->subdev.entity, numports, vidsw->pads);
 	if (ret < 0)
 		return ret;
 
@@ -147,12 +147,12 @@ static const struct v4l2_subdev_video_ops vidsw_subdev_video_ops = {
 };
 
 static struct v4l2_mbus_framefmt *
-__vidsw_get_pad_format(struct vidsw *vidsw, struct v4l2_subdev_fh *fh,
+__vidsw_get_pad_format(struct vidsw *vidsw, struct v4l2_subdev_pad_config *cfg,
 		       unsigned int pad, u32 which)
 {
 	switch (which) {
 	case V4L2_SUBDEV_FORMAT_TRY:
-		return v4l2_subdev_get_try_format(fh, pad);
+		return v4l2_subdev_get_try_format(&vidsw->subdev, cfg, pad);
 	case V4L2_SUBDEV_FORMAT_ACTIVE:
 		return &vidsw->format_mbus[pad];
 	default:
@@ -161,18 +161,18 @@ __vidsw_get_pad_format(struct vidsw *vidsw, struct v4l2_subdev_fh *fh,
 }
 
 static int vidsw_get_format(struct v4l2_subdev *sd,
-			    struct v4l2_subdev_fh *fh,
+			    struct v4l2_subdev_pad_config *cfg,
 			    struct v4l2_subdev_format *sdformat)
 {
 	struct vidsw *vidsw = container_of(sd, struct vidsw, subdev);
 
-	sdformat->format = *__vidsw_get_pad_format(vidsw, fh, sdformat->pad,
+	sdformat->format = *__vidsw_get_pad_format(vidsw, cfg, sdformat->pad,
 						   sdformat->which);
 	return 0;
 }
 
 static int vidsw_set_format(struct v4l2_subdev *sd,
-			    struct v4l2_subdev_fh *fh,
+			    struct v4l2_subdev_pad_config *cfg,
 			    struct v4l2_subdev_format *sdformat)
 {
 	struct vidsw *vidsw = container_of(sd, struct vidsw, subdev);
@@ -181,7 +181,7 @@ static int vidsw_set_format(struct v4l2_subdev *sd,
 	if (sdformat->pad >= vidsw->num_pads)
 		return -EINVAL;
 
-	mbusformat = __vidsw_get_pad_format(vidsw, fh, sdformat->pad,
+	mbusformat = __vidsw_get_pad_format(vidsw, cfg, sdformat->pad,
 					    sdformat->which);
 	if (!mbusformat)
 		return -EINVAL;
