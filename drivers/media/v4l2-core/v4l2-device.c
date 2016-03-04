@@ -251,8 +251,8 @@ int v4l2_device_register_subdev_node(struct v4l2_device *v4l2_dev,
 		return err;
 	}
 #if defined(CONFIG_MEDIA_CONTROLLER)
-	sd->entity.info.v4l.major = VIDEO_MAJOR;
-	sd->entity.info.v4l.minor = vdev->minor;
+	sd->entity.info.dev.major = VIDEO_MAJOR;
+	sd->entity.info.dev.minor = vdev->minor;
 
 	/* Interface is created by __video_register_device() */
 	if (vdev->v4l2_dev->mdev) {
