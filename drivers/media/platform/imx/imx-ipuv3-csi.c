@@ -65,49 +65,49 @@ static struct ipucsi_format ipucsi_formats[] = {
 	{
 		.name = "Monochrome 8 bit",
 		.fourcc = V4L2_PIX_FMT_GREY,
-		.mbus_code = V4L2_MBUS_FMT_Y8_1X8,
+		.mbus_code = MEDIA_BUS_FMT_Y8_1X8,
 		.bytes_per_pixel = 1,
 		.bytes_per_sample = 1,
 		.raw = 1,
 	}, {
 		.name = "Monochrome 10 bit",
 		.fourcc = V4L2_PIX_FMT_Y10,
-		.mbus_code = V4L2_MBUS_FMT_Y10_1X10,
+		.mbus_code = MEDIA_BUS_FMT_Y10_1X10,
 		.bytes_per_pixel = 2,
 		.bytes_per_sample = 2,
 		.raw = 1,
 	}, {
 		.name = "Monochrome 12 bit",
 		.fourcc = V4L2_PIX_FMT_Y16,
-		.mbus_code = V4L2_MBUS_FMT_Y12_1X12,
+		.mbus_code = MEDIA_BUS_FMT_Y12_1X12,
 		.bytes_per_pixel = 2,
 		.bytes_per_sample = 2,
 		.raw = 1,
 	}, {
 		.name = "UYUV 2x8 bit",
 		.fourcc = V4L2_PIX_FMT_UYVY,
-		.mbus_code = V4L2_MBUS_FMT_UYVY8_2X8,
+		.mbus_code = MEDIA_BUS_FMT_UYVY8_2X8,
 		.bytes_per_pixel = 2,
 		.bytes_per_sample = 1,
 		.yuv = 1,
 	}, {
 		.name = "YUYV 2x8 bit",
 		.fourcc = V4L2_PIX_FMT_YUYV,
-		.mbus_code = V4L2_MBUS_FMT_YUYV8_2X8,
+		.mbus_code = MEDIA_BUS_FMT_YUYV8_2X8,
 		.bytes_per_pixel = 2,
 		.bytes_per_sample = 1,
 		.yuv = 1,
 	}, {
 		.name = "UYUV 1x16 bit",
 		.fourcc = V4L2_PIX_FMT_UYVY,
-		.mbus_code = V4L2_MBUS_FMT_UYVY8_1X16,
+		.mbus_code = MEDIA_BUS_FMT_UYVY8_1X16,
 		.bytes_per_pixel = 2,
 		.bytes_per_sample = 2,
 		.raw = 1,
 	}, {
 		.name = "YUYV 1x16 bit",
 		.fourcc = V4L2_PIX_FMT_YUYV,
-		.mbus_code = V4L2_MBUS_FMT_YUYV8_1X16,
+		.mbus_code = MEDIA_BUS_FMT_YUYV8_1X16,
 		.bytes_per_pixel = 2,
 		.bytes_per_sample = 2,
 		.raw = 1,
@@ -117,7 +117,7 @@ static struct ipucsi_format ipucsi_formats[] = {
 static struct ipucsi_format ipucsi_format_testpattern = {
 	.name = "RGB888 32bit",
 	.fourcc = V4L2_PIX_FMT_RGB32,
-	.mbus_code = V4L2_MBUS_FMT_FIXED,
+	.mbus_code = MEDIA_BUS_FMT_FIXED,
 	.bytes_per_pixel = 4,
 	.bytes_per_sample = 4,
 	.rgb = 1,
@@ -285,9 +285,9 @@ static irqreturn_t ipucsi_new_frame_handler(int irq, void *context)
 	ipucsi->active = list_first_entry(&ipucsi->capture,
 					   struct ipucsi_buffer, queue);
 	vb = &ipucsi->active->vb;
-	do_gettimeofday(&vb->v4l2_buf.timestamp);
-	vb->v4l2_buf.field = ipucsi->format.fmt.pix.field;
-	vb->v4l2_buf.sequence = ipucsi->sequence++;
+	do_gettimeofday(&vb->timestamp);
+	vb->field = ipucsi->format.fmt.pix.field;
+	vb->sequence = ipucsi->sequence++;
 
 	/*
 	 * Point the inactive buffer address to the next queued buffer,
@@ -442,7 +442,7 @@ static void ipucsi_put_resources(struct ipucsi *ipucsi)
 /*
  *  Videobuf operations
  */
-static int ipucsi_videobuf_setup(struct vb2_queue *vq, const struct v4l2_format *fmt,
+static int ipucsi_videobuf_setup(struct vb2_queue *vq,
 		unsigned int *count, unsigned int *num_planes,
 		unsigned int sizes[], void *alloc_ctxs[])
 {
@@ -450,18 +450,15 @@ static int ipucsi_videobuf_setup(struct vb2_queue *vq, const struct v4l2_format 
 	int bytes_per_line;
 	struct ipucsi_format *ipucsifmt = ipucsi_current_format(ipucsi);
 
-	if (!fmt)
-		fmt = &ipucsi->format;
-
-	bytes_per_line = fmt->fmt.pix.width * ipucsifmt->bytes_per_pixel;
+	bytes_per_line = ipucsi->format.fmt.pix.width * ipucsifmt->bytes_per_pixel;
 
 	dev_dbg(ipucsi->dev, "bytes: %d x: %d y: %d",
-			bytes_per_line, fmt->fmt.pix.width, fmt->fmt.pix.height);
+			bytes_per_line, ipucsi->format.fmt.pix.width, ipucsi->format.fmt.pix.height);
 
 	*num_planes = 1;
 
 	ipucsi->sequence = 0;
-	sizes[0] = fmt->fmt.pix.sizeimage;
+	sizes[0] = ipucsi->format.fmt.pix.sizeimage;
 	alloc_ctxs[0] = ipucsi->alloc_ctx;
 
 	if (!*count)
@@ -697,7 +694,7 @@ static int ipucsi_videobuf_start_streaming(struct vb2_queue *vq, unsigned int co
 		ipu_ic_enable(ipucsi->ic);
 		/* setup RSC and CSC */
 		ipu_ic_task_init(ipucsi->ic, width, height, width, height,
-				 IPUV3_COLORSPACE_RGB, IPUV3_COLORSPACE_RGB, 0);
+				 IPUV3_COLORSPACE_RGB, IPUV3_COLORSPACE_RGB);
 	}
 
 	/* FIXME */
@@ -973,12 +970,12 @@ static int ipucsi_enum_fmt(struct file *file, void *priv,
 }
 
 static struct v4l2_mbus_framefmt *
-__ipucsi_get_pad_format(struct ipucsi *ipucsi, struct v4l2_subdev_fh *fh,
+__ipucsi_get_pad_format(struct ipucsi *ipucsi, struct v4l2_subdev_pad_config *cfg,
 			unsigned int pad, u32 which)
 {
 	switch (which) {
 	case V4L2_SUBDEV_FORMAT_TRY:
-		return v4l2_subdev_get_try_format(fh, pad);
+		return v4l2_subdev_get_try_format(&ipucsi->subdev, cfg, pad);
 	case V4L2_SUBDEV_FORMAT_ACTIVE:
 		return &ipucsi->format_mbus[pad ? 1 : 0];
 	default:
@@ -987,12 +984,12 @@ __ipucsi_get_pad_format(struct ipucsi *ipucsi, struct v4l2_subdev_fh *fh,
 }
 
 static int ipucsi_subdev_get_format(struct v4l2_subdev *subdev,
-		struct v4l2_subdev_fh *fh,
+		struct v4l2_subdev_pad_config *cfg,
 		struct v4l2_subdev_format *sdformat)
 {
 	struct ipucsi *ipucsi = container_of(subdev, struct ipucsi, subdev);
 
-	sdformat->format = *__ipucsi_get_pad_format(ipucsi, fh, sdformat->pad,
+	sdformat->format = *__ipucsi_get_pad_format(ipucsi, cfg, sdformat->pad,
 						sdformat->which);
 	return 0;
 }
@@ -1015,7 +1012,7 @@ static struct ipucsi_format *ipucsi_find_subdev_format(const u32 *fourcc,
 }
 
 static int ipucsi_subdev_set_format(struct v4l2_subdev *subdev,
-		struct v4l2_subdev_fh *fh,
+		struct v4l2_subdev_pad_config *cfg,
 		struct v4l2_subdev_format *sdformat)
 {
 	struct ipucsi *ipucsi = container_of(subdev, struct ipucsi, subdev);
@@ -1030,7 +1027,7 @@ static int ipucsi_subdev_set_format(struct v4l2_subdev *subdev,
 	width = clamp_t(unsigned int, sdformat->format.width, 16, 8192);
 	height = clamp_t(unsigned int, sdformat->format.height, 16, 4096);
 
-	mbusformat = __ipucsi_get_pad_format(ipucsi, fh, sdformat->pad,
+	mbusformat = __ipucsi_get_pad_format(ipucsi, cfg, sdformat->pad,
 					    sdformat->which);
 	mbusformat->width = width;
 	mbusformat->height = height;
@@ -1083,7 +1080,7 @@ int v4l2_media_subdev_s_stream(struct media_entity *entity, int enable)
 	}
 
 	while (!ret && (entity = media_entity_graph_walk_next(&graph))) {
-		if (media_entity_type(entity) == MEDIA_ENT_T_V4L2_SUBDEV) {
+		if (is_media_entity_v4l2_subdev(entity)) {
 			sd = media_entity_to_v4l2_subdev(entity);
 			ret = v4l2_subdev_call(sd, video, s_stream, 1);
 			if (ret == -ENOIOCTLCMD)
@@ -1098,7 +1095,7 @@ int v4l2_media_subdev_s_stream(struct media_entity *entity, int enable)
 
 disable:
 	while ((entity = media_entity_graph_walk_next(&graph)) && first != entity) {
-		if (media_entity_type(entity) == MEDIA_ENT_T_V4L2_SUBDEV) {
+		if (is_media_entity_v4l2_subdev(entity)) {
 			sd = media_entity_to_v4l2_subdev(entity);
 			v4l2_subdev_call(sd, video, s_stream, 0);
 		}
@@ -1126,7 +1123,7 @@ int v4l2_media_subdev_s_power(struct ipucsi *ipucsi, int enable)
 	v4l2_ctrl_handler_init(&ipucsi->ctrls_vdev, 1);
 
 	while (!ret && (entity = media_entity_graph_walk_next(&graph))) {
-		if (media_entity_type(entity) == MEDIA_ENT_T_V4L2_SUBDEV) {
+		if (is_media_entity_v4l2_subdev(entity)) {
 			sd = media_entity_to_v4l2_subdev(entity);
 			ret = v4l2_subdev_call(sd, core, s_power, 1);
 			if (ret == -ENOIOCTLCMD)
@@ -1146,7 +1143,7 @@ int v4l2_media_subdev_s_power(struct ipucsi *ipucsi, int enable)
 
 disable:
 	while ((entity = media_entity_graph_walk_next(&graph)) && first != entity) {
-		if (media_entity_type(entity) == MEDIA_ENT_T_V4L2_SUBDEV) {
+		if (is_media_entity_v4l2_subdev(entity)) {
 			sd = media_entity_to_v4l2_subdev(entity);
 			v4l2_subdev_call(sd, core, s_power, 0);
 		}
@@ -1367,7 +1364,7 @@ static int ipucsi_subdev_init(struct ipucsi *ipucsi, struct device_node *node)
 	ipucsi->subdev_pad[3].flags = MEDIA_PAD_FL_SOURCE;
 	ipucsi->subdev_pad[4].flags = MEDIA_PAD_FL_SOURCE;
 
-	ret = media_entity_init(&ipucsi->subdev.entity, 5, ipucsi->subdev_pad, 0);
+	ret = media_entity_pads_init(&ipucsi->subdev.entity, 5, ipucsi->subdev_pad);
 	if (ret < 0)
 		return ret;
 
@@ -1537,8 +1534,7 @@ failed:
 	v4l2_ctrl_handler_free(&ipucsi->ctrls);
 	if (ipucsi->link)
 		ipu_media_entity_remove_link(ipucsi->link);
-	if (ipucsi->vdev.entity.links)
-		media_entity_cleanup(&ipucsi->vdev.entity);
+	media_entity_cleanup(&ipucsi->vdev.entity);
 	if (ipucsi->alloc_ctx)
 		vb2_dma_contig_cleanup_ctx(ipucsi->alloc_ctx);
 	if (ipucsi->ipuch)
