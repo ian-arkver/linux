@@ -795,6 +795,7 @@ int ipu_media_init(struct ipu_soc *ipu)
 		sd->dev = ipu->dev;
 
 		sd->entity.name = sd->name;
+		sd->entity.function = MEDIA_ENT_F_GPU;
 		sd->entity.ops = ipu_entities[i].ops;
 
 		for (num_pads = 0; num_pads < ARRAY_SIZE(ipu_entities[0].pads)
