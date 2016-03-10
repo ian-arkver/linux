@@ -154,10 +154,9 @@ int ipu_media_device_register(struct device *dev)
 		return -ENOMEM;
 
 	mdev = &ipu_media->mdev;
-
 	mdev->dev = dev;
-
 	strlcpy(mdev->model, "i.MX IPUv3", sizeof(mdev->model));
+	media_device_init(mdev);
 
 	ret = media_device_register(mdev);
 	if (ret)
