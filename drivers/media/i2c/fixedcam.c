@@ -340,7 +340,8 @@ static struct v4l2_subdev_ops fixedcam_subdev_ops = {
 
 static void fixedcam_power(struct fixedcam_dev *sensor, bool enable)
 {
-	gpio_set_value(sensor->pwdn_gpio, enable ? 0 : 1);
+	if (gpio_is_valid(sensor->pwdn_gpio)
+			gpio_set_value(sensor->pwdn_gpio, enable ? 0 : 1);
 }
 
 static void fixedcam_get_regulators(struct fixedcam_dev *sensor)
@@ -488,10 +489,12 @@ static int fixedcam_probe(struct i2c_client *client,
 
 	fixedcam_s_power(&sensor->sd, 1);
 	msleep(5);
-	gpio_set_value(sensor->reset_gpio, 0);
-	msleep(1);
-	gpio_set_value(sensor->reset_gpio, 1);
-	msleep(20);
+	if (gpio_is_valid(sensor->reset_gpio)) {
+		gpio_set_value(sensor->reset_gpio, 0);
+		msleep(1);
+		gpio_set_value(sensor->reset_gpio, 1);
+		msleep(20);
+	}
 
 	fixedcam_s_power(&sensor->sd, 0);
 
