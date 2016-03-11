@@ -16,30 +16,28 @@
 / {
 	model = "Ka-Ro electronics TX6U-8033 Module with Video Input";
 	compatible = "arkver,tx6qdl-vid", "karo,imx6dl-tx6dl", "fsl,imx6dl";
-
-	aliases {
-	};
 };
 
 &i2c1 {
-	ov5642: ov5642@3c {
-		compatible = "ovti,ov5642";
+	fixedcam: fixedcam@3c {
+		compatible = "ark,fixedcam";
 		pinctrl-names = "default";
-		pinctrl-0 = <&pinctrl_ov5642 &pinctrl_csi0>;
+		pinctrl-0 = <&pinctrl_csi0>;
 		reg = <0x3c>;
+		
+		/*
 		reset-gpios = <&gpio1 8 GPIO_ACTIVE_LOW>;
 		pwdn-gpios = <&gpio1 6 GPIO_ACTIVE_HIGH>;
-
-		/* ??? */
 		gp-gpios = <&gpio1 16 GPIO_ACTIVE_HIGH>;
-
+		
 		clocks = <&clks 200>;
 		clock-names = "xclk";
 		xclk = <24000000>;
+		*/
 
 		port {
-			ov5642_to_csi0: endpoint {
-				remote-endpoint = <&csi0_from_ov5642>;
+			fixed_to_csi0: endpoint {
+				remote-endpoint = <&csi0_from_fixed>;
 				hsync-active = <1>;
 				vsync-active = <1>;
 			};
@@ -48,8 +46,8 @@
 };
 
 &csi0 {
-	csi0_from_ov5642: endpoint {
-		remote-endpoint = <&ov5642_to_csi0>;
+	csi0_from_fixed: endpoint {
+		remote-endpoint = <&fixed_to_csi0>;
 		hsync-active = <1>;
 		vsync-active = <1>;
 	};
