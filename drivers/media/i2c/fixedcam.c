@@ -47,7 +47,6 @@ struct fixedcam_dev {
 	struct device *dev;
 	struct v4l2_subdev sd;
 	struct media_pad pad;
-	struct v4l2_ctrl_handler ctrl_hdl;
 	struct v4l2_of_endpoint ep; /* the parsed DT endpoint info */
 	struct v4l2_mbus_framefmt fmt;
 	struct v4l2_rect crop;
@@ -151,8 +150,6 @@ static int fixedcam_s_power(struct v4l2_subdev *sd, int on)
 		fixedcam_regulators_on(sensor);
 
 		fixedcam_power(sensor, true);
-
-		fixedcam_restore_mode(sensor);
 	} else if (!on && sensor->on) {
 		fixedcam_power(sensor, false);
 
@@ -182,9 +179,7 @@ static int fixedcam_s_frame_interval(struct v4l2_subdev *sd,
 {
 	struct fixedcam_dev *sensor = to_fixedcam_dev(sd);
 	struct v4l2_fract *timeperframe = &fi->interval;
-	enum fixedcam_frame_rate new_frame_rate;
 	u32 tgt_fps;
-	int ret;
 
 	/* Check that the new frame rate is allowed. */
 	if ((timeperframe->numerator == 0) ||
@@ -288,7 +283,6 @@ static int fixedcam_set_format(struct v4l2_subdev *sd,
 	struct fixedcam_dev *sensor = to_fixedcam_dev(sd);
 	struct v4l2_mbus_framefmt *__format;
 	struct v4l2_rect *__crop;
-	int ret;
 
 	__crop = __fixedcam_get_pad_crop(sd, cfg, format->pad, format->which);
 
@@ -322,13 +316,6 @@ static int fixedcam_get_selection(struct v4l2_subdev *sd,
 
 static struct v4l2_subdev_core_ops fixedcam_core_ops = {
 	.s_power = fixedcam_s_power,
-	.g_ext_ctrls = v4l2_subdev_g_ext_ctrls,
-	.try_ext_ctrls = v4l2_subdev_try_ext_ctrls,
-	.s_ext_ctrls = v4l2_subdev_s_ext_ctrls,
-	.g_ctrl = v4l2_subdev_g_ctrl,
-	.s_ctrl = v4l2_subdev_s_ctrl,
-	.queryctrl = v4l2_subdev_queryctrl,
-	.querymenu = v4l2_subdev_querymenu,
 };
 
 static struct v4l2_subdev_video_ops fixedcam_video_ops = {
@@ -383,7 +370,7 @@ static int fixedcam_probe(struct i2c_client *client,
 	struct device *dev = &client->dev;
 	struct device_node *endpoint;
 	struct fixedcam_dev *sensor;
-	int i, xclk, ret;
+	int xclk, ret;
 
 	sensor = devm_kzalloc(dev, sizeof(struct fixedcam_dev),
 			      GFP_KERNEL);
@@ -506,8 +493,6 @@ static int fixedcam_probe(struct i2c_client *client,
 	gpio_set_value(sensor->reset_gpio, 1);
 	msleep(20);
 
-	ret = fixedcam_init_controls(sensor);
-
 	fixedcam_s_power(&sensor->sd, 0);
 
 	if (ret < 0)
@@ -534,7 +519,6 @@ static int fixedcam_remove(struct i2c_client *client)
 	fixedcam_regulators_off(sensor);
 
 	v4l2_async_unregister_subdev(sd);
-	v4l2_ctrl_handler_free(&sensor->ctrl_hdl);
 
 	return 0;
 }
