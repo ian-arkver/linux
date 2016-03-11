@@ -340,8 +340,8 @@ static struct v4l2_subdev_ops fixedcam_subdev_ops = {
 
 static void fixedcam_power(struct fixedcam_dev *sensor, bool enable)
 {
-	if (gpio_is_valid(sensor->pwdn_gpio)
-			gpio_set_value(sensor->pwdn_gpio, enable ? 0 : 1);
+	if (gpio_is_valid(sensor->pwdn_gpio))
+		gpio_set_value(sensor->pwdn_gpio, enable ? 0 : 1);
 }
 
 static void fixedcam_get_regulators(struct fixedcam_dev *sensor)
