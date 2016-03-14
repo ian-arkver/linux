@@ -27,6 +27,28 @@ enum ipuv3_type {
 	IPUV3H,
 };
 
+/*
+ * Media entity abstractions of IPU internal blocks
+ */
+enum ipu_entities {
+	IPU_CSI0,
+	IPU_CSI1,
+	IPU_SMFC0,
+	IPU_SMFC1,
+	IPU_SMFC2,
+	IPU_SMFC3,
+	IPU_IC_PRP,
+	IPU_IC_PRP_ENC,
+	IPU_IC_PRP_VF,
+	IPU_IC_PP,
+	IPU_IRT_ENC,
+	IPU_IRT_VF,
+	IPU_IRT_PP,
+	IPU_VDIC,
+	/* TODO: add display units (DC, DP, DMFC) */
+	IPU_NUM_ENTITIES
+};
+
 #define IPU_PIX_FMT_GBR24	v4l2_fourcc('G', 'B', 'R', '3')
 
 /*
@@ -96,20 +118,34 @@ enum ipu_channel_irq {
 #define IPUV3_CHANNEL_CSI2			 2
 #define IPUV3_CHANNEL_CSI3			 3
 #define IPUV3_CHANNEL_VDI_MEM_IC_VF		 5
+#define IPUV3_CHANNEL_MEM_VDI_PREV		 8
+#define IPUV3_CHANNEL_MEM_VDI_CUR		 9
+#define IPUV3_CHANNEL_MEM_VDI_NEXT		10
 #define IPUV3_CHANNEL_MEM_IC_PP			11
 #define IPUV3_CHANNEL_MEM_IC_PRP_VF		12
+#define IPUV3_CHANNEL_VDI_MEM_RECENT		13
 #define IPUV3_CHANNEL_G_MEM_IC_PRP_VF		14
 #define IPUV3_CHANNEL_G_MEM_IC_PP		15
+#define IPUV3_CHANNEL_G_MEM_IC_PRP_VF_ALPHA	17
+#define IPUV3_CHANNEL_G_MEM_IC_PP_ALPHA		18
+#define IPUV3_CHANNEL_MEM_VDI_PLANE1_COMB_ALPHA	19
 #define IPUV3_CHANNEL_IC_PRP_ENC_MEM		20
 #define IPUV3_CHANNEL_IC_PRP_VF_MEM		21
 #define IPUV3_CHANNEL_IC_PP_MEM			22
 #define IPUV3_CHANNEL_MEM_BG_SYNC		23
 #define IPUV3_CHANNEL_MEM_BG_ASYNC		24
+#define IPUV3_CHANNEL_MEM_VDI_PLANE1_COMB	25
+#define IPUV3_CHANNEL_MEM_VDI_PLANE3_COMB	26
 #define IPUV3_CHANNEL_MEM_FG_SYNC		27
 #define IPUV3_CHANNEL_MEM_DC_SYNC		28
 #define IPUV3_CHANNEL_MEM_FG_ASYNC		29
 #define IPUV3_CHANNEL_MEM_FG_SYNC_ALPHA		31
+#define IPUV3_CHANNEL_MEM_FG_ASYNC_ALPHA	33
+#define IPUV3_CHANNEL_DC_MEM_READ		40
 #define IPUV3_CHANNEL_MEM_DC_ASYNC		41
+#define IPUV3_CHANNEL_MEM_DC_COMMAND		42
+#define IPUV3_CHANNEL_MEM_DC_COMMAND2		43
+#define IPUV3_CHANNEL_MEM_DC_OUTPUT_MASK	44
 #define IPUV3_CHANNEL_MEM_ROT_ENC		45
 #define IPUV3_CHANNEL_MEM_ROT_VF		46
 #define IPUV3_CHANNEL_MEM_ROT_PP		47
@@ -117,6 +153,7 @@ enum ipu_channel_irq {
 #define IPUV3_CHANNEL_ROT_VF_MEM		49
 #define IPUV3_CHANNEL_ROT_PP_MEM		50
 #define IPUV3_CHANNEL_MEM_BG_SYNC_ALPHA		51
+#define IPUV3_CHANNEL_MEM_BG_ASYNC_ALPHA	52
 
 int ipu_map_irq(struct ipu_soc *ipu, int irq);
 int ipu_idmac_channel_irq(struct ipu_soc *ipu, struct ipuv3_channel *channel,
@@ -140,6 +177,16 @@ int ipu_idmac_channel_irq(struct ipu_soc *ipu, struct ipuv3_channel *channel,
 void ipu_set_csi_src_mux(struct ipu_soc *ipu, int csi_id, bool mipi_csi2);
 void ipu_set_ic_src_mux(struct ipu_soc *ipu, int csi_id, bool vdi);
 void ipu_dump(struct ipu_soc *ipu);
+struct media_pad;
+struct media_entity;
+struct media_entity *ipu_get_entity(struct ipu_soc *ipu,
+				    enum ipu_entities entity);
+struct media_pad *ipu_channel_to_media_pad(struct ipu_soc *ipu, int channel);
+int ipu_media_pad_to_channel(struct ipu_soc *ipu, struct media_pad *pad);
+struct v4l2_subdev;
+int ipu_register_subdev(struct ipu_soc *ipu, enum ipu_entities idx,
+			struct v4l2_subdev *sd);
+void ipu_unregister_subdev(struct v4l2_subdev *sd);
 
 /*
  * IPU Image DMA Controller (idmac) functions
@@ -279,7 +326,9 @@ int ipu_csi_set_mipi_datatype(struct ipu_csi *csi, u32 vc,
 			      struct v4l2_mbus_framefmt *mbus_fmt);
 int ipu_csi_set_skip_smfc(struct ipu_csi *csi, u32 skip,
 			  u32 max_ratio, u32 id);
-int ipu_csi_set_dest(struct ipu_csi *csi, enum ipu_csi_dest csi_dest);
+int ipu_csi_link_setup(struct media_entity *entity,
+		       const struct media_pad *local,
+		       const struct media_pad *remote, u32 flags);
 int ipu_csi_enable(struct ipu_csi *csi);
 int ipu_csi_disable(struct ipu_csi *csi);
 struct ipu_csi *ipu_csi_get(struct ipu_soc *ipu, int id);

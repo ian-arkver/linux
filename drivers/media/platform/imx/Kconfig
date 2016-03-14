@@ -1,0 +1,27 @@
+config MEDIA_IMX
+	tristate "Multimedia Support for Freescale i.MX"
+	depends on MEDIA_CONTROLLER
+	---help---
+	  This driver provides a SoC wide media controller device that all
+	  multimedia components in i.MX5 and i.MX6 SoCs can register with.
+
+config MEDIA_IMX_VIDEO_SWITCH
+	tristate "i.MX Video Bus Multiplexer"
+	depends on VIDEO_V4L2_SUBDEV_API
+	help
+	  This driver provides support for SoC internal video bus multiplexers
+	  controlled by register bitfields as well as external multiplexers
+	  controller by a GPIO.
+
+config VIDEO_IMX_IPU_COMMON
+	tristate
+
+config VIDEO_IMX_IPU_CSI
+	tristate "i.MX5/6 CMOS Sensor Interface driver"
+	depends on VIDEO_DEV && MEDIA_CONTROLLER
+	select VIDEOBUF2_DMA_CONTIG
+	select VIDEO_IMX_IPU_COMMON
+	select VIDEO_IMX_IPUV3
+	select IMX_IPUV3_CORE
+	---help---
+	  This is a v4l2 video capture driver for the IPUv3 on i.MX5/6.

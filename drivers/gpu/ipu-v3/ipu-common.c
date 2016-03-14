@@ -31,7 +31,7 @@
 #include <linux/of_graph.h>
 
 #include <drm/drm_fourcc.h>
-
+#include <media/imx.h>
 #include <video/imx-ipu-v3.h>
 #include "ipu-prv.h"
 
@@ -43,6 +43,20 @@ static inline u32 ipu_cm_read(struct ipu_soc *ipu, unsigned offset)
 static inline void ipu_cm_write(struct ipu_soc *ipu, u32 value, unsigned offset)
 {
 	writel(value, ipu->cm_reg + offset);
+}
+
+void ipu_cm_update_bits(struct ipu_soc *ipu, unsigned int reg,
+			unsigned int mask, unsigned int val)
+{
+	unsigned long flags;
+	u32 tmp;
+
+	spin_lock_irqsave(&ipu->lock, flags);
+	tmp = ipu_cm_read(ipu, reg);
+	tmp &= ~mask;
+	tmp |= (val & mask);
+	ipu_cm_write(ipu, val, reg);
+	spin_unlock_irqrestore(&ipu->lock, flags);
 }
 
 void ipu_srm_dp_sync_update(struct ipu_soc *ipu)
@@ -1203,6 +1217,7 @@ static int ipu_probe(struct platform_device *pdev)
 {
 	const struct of_device_id *of_id =
 			of_match_device(imx_ipu_dt_ids, &pdev->dev);
+	struct device_node *np = pdev->dev.of_node;
 	struct ipu_soc *ipu;
 	struct resource *res;
 	unsigned long ipu_base;
@@ -1231,6 +1246,7 @@ static int ipu_probe(struct platform_device *pdev)
 		ipu->channel[i].ipu = ipu;
 	ipu->devtype = devtype;
 	ipu->ipu_type = devtype->type;
+	ipu->id = of_alias_get_id(np, "ipu");
 
 	spin_lock_init(&ipu->lock);
 	mutex_init(&ipu->channel_lock);
@@ -1313,6 +1329,10 @@ static int ipu_probe(struct platform_device *pdev)
 	if (ret)
 		goto failed_submodules_init;
 
+	ret = ipu_media_device_register(ipu->dev);
+	if (ret)
+		goto failed_media_device;
+
 	ret = ipu_add_client_devices(ipu, ipu_base);
 	if (ret) {
 		dev_err(&pdev->dev, "adding client devices failed with %d\n",
@@ -1320,11 +1340,18 @@ static int ipu_probe(struct platform_device *pdev)
 		goto failed_add_clients;
 	}
 
+	ret = ipu_media_init(ipu);
+	if (ret)
+		goto failed_media_init;
+
 	dev_info(&pdev->dev, "%s probed\n", devtype->name);
 
 	return 0;
 
+failed_media_init:
+	platform_device_unregister_children(pdev);
 failed_add_clients:
+failed_media_device:
 	ipu_submodules_exit(ipu);
 failed_submodules_init:
 	ipu_irq_exit(ipu);
@@ -1339,6 +1366,7 @@ static int ipu_remove(struct platform_device *pdev)
 	struct ipu_soc *ipu = platform_get_drvdata(pdev);
 
 	platform_device_unregister_children(pdev);
+	ipu_media_exit(ipu);
 	ipu_submodules_exit(ipu);
 	ipu_irq_exit(ipu);
 
