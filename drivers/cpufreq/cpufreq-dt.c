@@ -194,8 +194,11 @@ static int cpufreq_init(struct cpufreq_policy *policy)
 	name = find_supply_name(cpu_dev);
 	if (name) {
 #if IS_ENABLED(CONFIG_VOLTAGE_DOMAIN)
+		struct device_node *np = of_node_get(priv->cpu_dev->of_node);
+
 		clk_nb = of_pm_voltdm_notifier_register(cpu_dev, np, cpu_clk, name,
-							   &voltage_latency);
+							   &transition_latency);
+		of_node_put(np);
 
 		if (IS_ERR(clk_nb)) {
 			ret = PTR_ERR(clk_nb);
