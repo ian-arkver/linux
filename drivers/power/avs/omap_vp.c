@@ -762,11 +762,12 @@ static int omap_vp_probe(struct platform_device *pdev)
 
 	pname = "base-address";
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pname);
-	base = devm_request_and_ioremap(dev, res);
-	if (!base) {
+	base = devm_ioremap_resource(dev, res);
+	if (IS_ERR(base)) {
 		dev_err(dev, "Unable to map '%s'\n", pname);
-		return -EADDRNOTAVAIL;
+		return PTR_ERR(base);
 	}
+
 	pname = "int-address";
 	res = platform_get_resource_byname(pdev, IORESOURCE_MEM, pname);
 	if (!res) {
