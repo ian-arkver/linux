@@ -22,6 +22,9 @@
 #include <linux/pm_opp.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
+#if IS_ENABLED(CONFIG_VOLTAGE_DOMAIN)
+#include <linux/pm_voltage_domain.h>
+#endif
 #include <linux/slab.h>
 #include <linux/thermal.h>
 
@@ -29,6 +32,9 @@ struct private_data {
 	struct device *cpu_dev;
 	struct thermal_cooling_device *cdev;
 	const char *reg_name;
+#if IS_ENABLED(CONFIG_VOLTAGE_DOMAIN)
+	struct notifier_block *clk_nb;
+#endif
 };
 
 static struct freq_attr *cpufreq_dt_attr[] = {
@@ -145,6 +151,9 @@ static int cpufreq_init(struct cpufreq_policy *policy)
 	struct device *cpu_dev;
 	struct clk *cpu_clk;
 	struct dev_pm_opp *suspend_opp;
+#if IS_ENABLED(CONFIG_VOLTAGE_DOMAIN)
+	struct notifier_block *clk_nb;
+#endif
 	unsigned int transition_latency;
 	bool fallback = false;
 	const char *name;
@@ -184,12 +193,31 @@ static int cpufreq_init(struct cpufreq_policy *policy)
 	 */
 	name = find_supply_name(cpu_dev);
 	if (name) {
+#if IS_ENABLED(CONFIG_VOLTAGE_DOMAIN)
+		clk_nb = of_pm_voltdm_notifier_register(cpu_dev, np, cpu_clk, name,
+							   &voltage_latency);
+
+		if (IS_ERR(clk_nb)) {
+			ret = PTR_ERR(clk_nb);
+			/* defer probe if regulator is not yet registered */
+			if (ret == -EPROBE_DEFER) {
+				dev_dbg(cpu_dev,
+					"Clock notifier is not ready, deferring probe\n");
+			} else {
+				dev_err(cpu_dev,
+					"Failed to register %s clock notifier: %d\n", name,
+					ret);
+			}
+			goto out_put_clk;
+		}
+#else
 		ret = dev_pm_opp_set_regulator(cpu_dev, name);
 		if (ret) {
 			dev_err(cpu_dev, "Failed to set regulator for cpu%d: %d\n",
 				policy->cpu, ret);
 			goto out_put_clk;
 		}
+#endif
 	}
 
 	/*
@@ -245,6 +273,9 @@ static int cpufreq_init(struct cpufreq_policy *policy)
 	priv->cpu_dev = cpu_dev;
 	policy->driver_data = priv;
 	policy->clk = cpu_clk;
+#if IS_ENABLED(CONFIG_VOLTAGE_DOMAIN)
+	priv->clk_nb = clk_nb;
+#endif
 
 	rcu_read_lock();
 	suspend_opp = dev_pm_opp_get_suspend_opp(cpu_dev);
@@ -283,7 +314,13 @@ out_free_priv:
 out_free_opp:
 	dev_pm_opp_of_cpumask_remove_table(policy->cpus);
 	if (name)
+#if IS_ENABLED(CONFIG_VOLTAGE_DOMAIN)
+	if (name)
+		of_pm_voltdm_notifier_unregister(clk_nb);
+#else
+	if (name)
 		dev_pm_opp_put_regulator(cpu_dev);
+#endif
 out_put_clk:
 	clk_put(cpu_clk);
 
@@ -297,8 +334,13 @@ static int cpufreq_exit(struct cpufreq_policy *policy)
 	cpufreq_cooling_unregister(priv->cdev);
 	dev_pm_opp_free_cpufreq_table(priv->cpu_dev, &policy->freq_table);
 	dev_pm_opp_of_cpumask_remove_table(policy->related_cpus);
+#if IS_ENABLED(CONFIG_VOLTAGE_DOMAIN)
+	if (priv->reg_name)
+		of_pm_voltdm_notifier_unregister(priv->clk_nb);
+#else
 	if (priv->reg_name)
 		dev_pm_opp_put_regulator(priv->cpu_dev);
+#endif
 
 	clk_put(policy->clk);
 	kfree(priv);
