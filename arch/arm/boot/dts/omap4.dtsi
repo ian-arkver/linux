@@ -1024,7 +1024,7 @@
 
 		vc: vc@4a307b88 {
 			compatible = "ti,omap4-vc";
-			/* TBD: clocks = <&sysclk_in>; */
+			clocks = <&sys_clkin_ck>;
 			reg = <0x4A307B88 0x40>;
 			reg-names = "base-address";
 
@@ -1049,7 +1049,7 @@
 			reg-names = "base-address", "int-address";
 			ti,tranxdone-status-mask=<0x20>;
 
-			/* TBD: clocks = <&sysclk_in>; */
+			clocks = <&sys_clkin_ck>;
 
 			ti,vc-channel = <&vc_mpu>;
 			ti,min-step-micro-volts = <10000>;
@@ -1063,7 +1063,7 @@
 			reg-names = "base-address", "int-address";
 			ti,tranxdone-status-mask=<0x20000000>;
 
-			/* TBD: clocks = <&sysclk_in>; */
+			clocks = <&sys_clkin_ck>;
 
 			ti,vc-channel = <&vc_iva>;
 			ti,min-step-micro-volts = <10000>;
@@ -1077,7 +1077,7 @@
 			reg-names = "base-address", "int-address";
 			ti,tranxdone-status-mask=<0x200000>;
 
-			/* TBD: clocks = <&sysclk_in>; */
+			clocks = <&sys_clkin_ck>;
 
 			regulator_name = "vdd_core";
 			ti,vc-channel = <&vc_core>;
