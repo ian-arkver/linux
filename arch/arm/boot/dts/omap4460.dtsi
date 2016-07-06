@@ -86,8 +86,21 @@
 			1376000		1	0	0	0	0
 			>;
 		};
-	};
 
+		mpu_voltdm: mpu_voltdm {
+			compatible = "ti,omap-voltdm";
+			#voltdm-cells = <0>;
+			vdd-supply = <&vp_mpu>;
+			vbb-supply = <&abb_mpu>;
+		};
+
+		iva_voltdm: iva_voltdm {
+			compatible = "ti,omap-voltdm";
+			#voltdm-cells = <0>;
+			vdd-supply = <&vp_iva>;
+			vbb-supply = <&abb_iva>;
+		};
+	};
 };
 
 &vc_mpu {
